@@ -88,3 +88,8 @@
     - ```PlatformTransactionManager``` 구현체 직접 사용
 
 - aspectJ ? 
+
+#### 추가로..
+
+- checked uncheckedException ?
+- 
