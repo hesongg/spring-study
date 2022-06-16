@@ -1,0 +1,90 @@
+# 스프링 Transaction 
+
+<br>
+
+### 트랜잭션 이란?
+
+- 트랜잭션(Transaction)은 데이터베이스의 상태를 변환시키는 하나의 논리적 기능을 수행하기 위한 작업의 단위 
+  또는 ```한꺼번에 모두 수행되어야 할 일련의 연산```들을 의미한다.
+
+- 프록시란?
+
+- 스프링 트랜잭션은 프록시 기반으로 동작하기때문에 public 메서드에만 적용된다.
+    - 프록시가 해당 객체를 감싸서 aop 방식으로 트랜잭션을 수행하기 때문에...
+    - non-public 메서드에 적용하고싶으면 aspectJ를 알아보자.
+  
+<br>  
+  
+### 트랜잭션 특징
+
+|ACID|설명|
+|----|---|
+|Atomicity(원자성)|트랜잭션의 연산은 데이터베이스에 모두 반영되든지 아니면 전혀 반영되지 않아야 한다.(All or Nothing)|
+|Consistency(일관성)|트랜잭션이 성공적으로 완료하면 일관성 있는 데이터베이스 반영한다.|
+|Isolation(독립성,격리성)|트랜잭션은 독립적으로 처리되며, 서로간의 트랜잭션은 간섭(연산) 할 수 없다.|
+|Durablility(영속성,지속성)|성공적으로 완료된 트랜잭션의 결과는 영구적으로 지속되어야 한다.|
+
+<br>
+
+### 전파 레벨(propagation)
+
+<br>
+
+### isolation (격리수준)
+
+<br>
+
+### 트랜잭션 설정 방식
+
+
+- xml에서 AOP로 설정
+  - 스프링 AOP기능을 이용해 트랜잭션의 범위, 롤백 규칙 등을 설정파일로 공통적으로 트랜잭션을 적용하는방식
+  - 각 구현체에 비즈니스 로직을 구현할 때 따로 트랜잭션 미처리에 대한 문제를 피할 수 있음
+  - 필요없는 부분까지 적용이 되기에 성능에 문제가 될 수 있음
+  
+  - 현재 실무에서 사용하는 방법이다.. 
+    - 많은 비즈니스 모델의 공통 프레임워크 관리를 해야해서 이렇게했지만.. 
+        실제로는 선언적 방식을 쓰는게 좋을 것 같다
+  - xml 설정에 특정 dataSource를 참조하는 txManager bean을 만든 다음, AOP 에 적용한다
+    ```xml
+    <!-- 편의상 상단의 xml 스키마 내용은 생략-->
+
+    <bean id = "txManager" class = "org.springframework.jdbc.datasource.Datasource.DataSourceTransactionManager">
+      <property name="dataSource" ref="dataSource"/>   
+    </bean>
+
+    <tx:advice id = "txAdvice" transaction-manager="txManager">
+        <tx:attributes>
+            <tx:method name="*" rollback-for = "Exception" timeout="40"/>
+        </tx:attributes>
+    </tx:advice>
+    
+    <aop:config>
+        <!-- aop pointcut 설정. NonTransactional 어노테이션을 만들어서 해당 어노테이션이 달려있으면 트랜잭션을 안타게한다. -->
+        <aop:pointcut id = "requiredTx" expression = "execution(* org.go.temp.*.*SVCImpl.*(..))
+                                                       &amp;&amp; ! @annotation(org.temp.NonTransactional)"/>
+        <!-- requiredTx 로 정의해놓은 pointcut에 txAdvice 를 적용한다. -->
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="requiredTx" />
+    <aop:config>
+    ```
+
+- 선언적 트랜잭션(@Transactional)
+    - 객체가 스프링 IoC 컨테이너에 빈으로 정의되었다면 이 빈 인스턴스는 XML 설정을 한 줄 추가하는 것으로 트랜잭션 처리 대상이 된다.
+    ```xml
+         <tx:annotation-driven transaction-manager="txManager"/>
+
+        <bean id = "txManager" class = "org.springframework.jdbc.datasource.Datasource.DataSourceTransactionManager">
+          <property name="dataSource" ref="dataSource"/>   
+        </bean>
+    ```
+    
+    - Java 설정 사용하고싶으면 ```@Configuration``` 클래스에 ```@EnableTransactionManagement``` 어노테이션도 추가하면 된다.
+        
+    -
+    
+- 프로그래밍 방식 트랜잭션 설정
+    - ```TransactionTemplate``` 사용
+    
+    - ```PlatformTransactionManager``` 구현체 직접 사용
+
+- aspectJ ? 
