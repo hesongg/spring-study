@@ -75,11 +75,90 @@
 
 <br>
 
-### 전파 레벨(propagation)
+### propagation (전파 레벨)
+
+- 트랜잭션에 전파 레벨을 설정할 수 있다.
+
+- Propagation.REQUIRED
+  - ```default``` 값이기 때문에 생략 가능
+  - 부모 트랜잭션(해당 메서드를 호출한 곳의 트랜잭션)이 있을 경우, 
+    부모 트랜잭션 내에서 실행하며 부모 트랜잭션이 없을 경우 새로운 트랜잭션 생성
+  - 예외가 발생하면 롤백이 되고 호출한 곳에도 롤백이 전파된다.
+
+- Propagation.REQUIRES_NEW
+  - 매번 새로운 트랜잭션을 시작(새로운 연결을 생성하고 실행)
+  - 호출한 곳에서 이미 트랜잭션이 설정되어 있다면(기존의 연결), 기존의 트랜잭션은 메소드가 종료할 때까지 잠시 대기 상태로 두고 자신의 트랜잭션을 실행한다.       <br>(부모 트랜잭션 상관X -> 트랜잭션 실패의 경우 예외 처리를 하지 않으면 부모 트랜잭션에게 예외가 전파될 수 있다.)
+
+- Propagation.NESTED
+  - 해당 메소드가 부모 트랜잭션에서 진행될 경우 별개로 커밋되거나 롤백될 수 있다.
+    - Propagation.REQUIRES_NEW 와 다르게 부모 트랜잭션이 중심인 것 같다.
+  
+  - 부모 트랜잭션이 있으면 중첩 트랜잭션을 생성
+  - 중첩 트랜잭션이 끝나도 모든 커밋은 부모 트랜잭션의 끝에서 이루어 진다.
+  - 중첩 트랜잭션 내부에서 롤백이 발생할 때 롤백을 부모 트랜잭션까지 전파하지 않는다.
+  - 중첩 트랜잭션이 끝난 후 부모 트랜잭션에서 롤백이 발생하면 모든 트랜잭션을 롤백한다.
+  - 둘러싼 부모 트랜잭션이 없을 경우 Propagation.REQUIRED와 동일하게 작동한다. (새로운 트랜잭션 생성)
+  - 유의해야 할 점은 DB가 SAVEPOINT 기능을 지원해야 사용이 가능(Oracle)하다고 한다.
+
+- Propagation.MANDATORY
+  - 부모 트랜잭션에 합류한다. 만약 부모 트랜잭션이 없다면 예외 발생
+
+- Propagation.SUPPORT
+  - 부모 트랜잭션이 존재하면 부모 트랜잭션으로 동작하고, 없을경우 non-transactional 하게 동작한다.
+
+- Propagation.NOT_SUPPORT
+  - non-transactional 로 실행되며 부모 트랜잭션이 존재하면 일시 정지한다.
+
+- Propagation.NEVER
+  - non-transactional 로 실행되며 부모 트랜잭션이 존재하면 Exception이 발생한다.
 
 <br>
 
 ### isolation (격리수준)
+
+- 트랜잭션에서 일관성이 없는 데이터를 허횽하도록 하는 수준
+
+- READ_UNCOMMITED (level 0)
+- READ_COMMITED (level 1)
+- REPEATABLE_READ (level 2)
+- SERIALIZABLE (level 3)
+
+- 격리 수준이 높아질수록 동시성(Concurrency)는 높아지고 성능은 안좋아진다.
+  - 균형을 잘 맞추는 것이 중요
+
+- READ_UNCOMMITED (커밋되지 않는 읽기, level 0)
+  - 트랜잭션 처리 중이거나 아직 commit되지 않은 데이터를 다른 트랜잭션이 읽는 것을 허용한다.
+  - ```dirty read``` 발생
+    - 다른 트랜잭션에서 처리하는 작업이 완료되지 않았는데도 다른 트랜잭션에서 읽을 수 있는 현상
+
+- READ_COMMITED (커밋된 읽기, level 1)
+  - dirty read 방지 : 트랜잭션이 commit 되어 확정된 데이터만을 읽도록 허용
+  - A라는 데이터가 B로 변경되는 동안 다른 사용자는 해당 데이터에 접근할 수 없음
+  - "REPEATABLE READ" 정합성에는 어긋난다. -> ```"NON-REPEATABLE READ"```
+    - 하나의 트랜잭션 내에서 같은 SELECT 쿼리를 여러번 실행했을 때, 그 사이에 커밋이 일어나면 결과가 달라짐
+    
+
+- REPEATABLE_READ (반복 가능한 읽기, level 2)
+  - 트랜잭션이 완료될 때까지 SELECT 문장이 사용하는 모든 데이터에 shared lock이 걸린다.
+  - 선행 트랜잭션이 읽은 데이터는 트랜잭션이 종료될 때까지 후행 트랜잭션이 갱신하거나 삭제하는 것을 불허함으로써 
+    같은 데이터를 두 번 조회했을 때 일관성 있는 결과를 보여준다.
+  - Phantom READ 발생
+    - 한 트랜잭션내에서 동일한 쿼리를 두 번 수행했는데, 첫 번째 쿼리에서 존재하지 않던 유령(Phantom) 레코드가 두 번째 쿼리에서 나타나는 현상
+  
+- SERIALIZABLE (직렬화 가능, level 3)
+  - 완벽한 읽기 일관성 모드 제공(가장 엄격하다)
+  - 성능 측면에서 동시 처리 성능이 가장 낮다.
+  - 거의 사용되지 않음
+  - 트랜잭션이 완료될 때까지 SELECT 문장이 사용하는 모든 데이터에 shared lock이 걸리므로 
+    다른 사용자는 그 영역에 해당하는 데이터에 대한 수정 및 입력이 불가능하다.
+
+- 각 DB별 isolation
+  ```
+  MYSQL : REPEATABLE READ
+  ORACLE : READ COMMITTED
+  H2 : READ COMMITTED
+  DB2 : READ COMMITTED
+  ```
 
 <br>
 
@@ -142,9 +221,10 @@
             //xml에 bean으로 정의해놓은 "txManager"(DataSourceTransactionManager) 를 사용한다.
             TransactionTemplate txTemplate = new TransactionTemplate((PlatformTransactionManager) StaticBeanService.getServiceBean("txManager"));
             
+            // 전파레벨을 Propagation.REQUIRES_NEW 로 설정하여 완전히 새로운 트랜잭션으로 설정한다.
             txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             
-            //업무 특성에 맞는 트랜잭션명을 가져오기 위해 따로 정의함
+            // 업무 특성에 맞는 트랜잭션명을 가져오기 위해 따로 정의함
             String txName = getTransactionName("TEMP");
             
             txTemplate.setName(txName);
