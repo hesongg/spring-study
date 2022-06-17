@@ -7,7 +7,7 @@
 - 트랜잭션(Transaction)은 데이터베이스의 상태를 변환시키는 하나의 논리적 기능을 수행하기 위한 작업의 단위 
   또는 ```한꺼번에 모두 수행되어야 할 일련의 연산```들을 의미한다.
 
-- ```프록시``` 란?
+- 참고) ```프록시``` 란?
   - target object와 Aspect를 하나로 합친 객체
   
   - Weaving 과정을 통해 생성
@@ -49,7 +49,7 @@
     - 스프링 프레임워크에서 xml 설정을 사용하고 있을 때, ```<aop:config>``` 태그 안에 ```proxy-target-class="true"``` 를 추가하면
       CGLIB를 사용하도록 한다.
 
-- 스프링 트랜잭션은 프록시 기반으로 동작하기때문에 public 메서드에만 적용된다.
+- AOP 방식으로 사용하는 스프링 트랜잭션(선언적 트랜잭션 방식 및 xml aop )은 프록시 기반으로 동작하기때문에 public 메서드에만 적용된다.
     - 스프링의 트랜잭션 처리는 스프링 AOP를 기반으로 하고 있다.
       - 스프링 AOP는 프록시를 기반으로 동작한다. 
       
@@ -131,7 +131,36 @@
     -
     
 - 프로그래밍 방식 트랜잭션 설정
+    - AOP 방식 트랜잭션이 비효율적인 경우 사용 가능
+    
     - ```TransactionTemplate``` 사용
+      - 실제로 업무에서 사용된 방식을 정리.. 원래 공통 설정 트랜잭션 기능을 제공하기위해 xml 설정(aop 방식)을 이용하여서 
+        서비스가 실행될 때 Transaction 사용이 되도록 공통 처리가 되어있는데, 그 안에서 개별적으로 새로운 Transaction 사용이 경우가 있어
+        Transaction 을 새로 만들어서 비즈니스 로직을 처리할 수 있는 메서드를 제공한다.
+          ```java
+          public static <T> T doExecuteNewTransaction(TransactionCallback<T> callback, int timeout) {
+            //xml에 bean으로 정의해놓은 "txManager"(DataSourceTransactionManager) 를 사용한다.
+            TransactionTemplate txTemplate = new TransactionTemplate((PlatformTransactionManager) StaticBeanService.getServiceBean("txManager"));
+            
+            txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            
+            //업무 특성에 맞는 트랜잭션명을 가져오기 위해 따로 정의함
+            String txName = getTransactionName("TEMP");
+            
+            txTemplate.setName(txName);
+            
+            if(timeout != TIMEOUT_NOTDEFINED){
+              txTemplate.setTimeout(timeout);
+            }
+            
+            try {
+              return txTemplate.execute(callback);  // 인수로 전달받은 비즈니스 메서드 실행하여 값 
+            } catch (RuntimeException e) {
+              throw e;
+            }
+          }
+          ```
+        
     
     - ```PlatformTransactionManager``` 구현체 직접 사용
 
