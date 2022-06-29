@@ -1,3 +1,5 @@
+# 스프링 어노테이션 관련 내용 정리
+
 ### 스프링 빈 설정 시 @Bean 과 @Component의 차이
 
 - @Bean
@@ -9,3 +11,9 @@
   - 클래스 레벨에서 선언, 스프링이 런타임시에 컴포넌트 스캔을해서 자동으로 빈을 찾아서 등록하는 어노테이션이다.
   - xml이나, @ConfigurationScan 으로 컴포넌트 스캔 패키지를 지정할 수 있다.
     - 스프링부트에서는 @SpringBootApplication 어노테이션에 @ComponentScan이 들어있기 때문에 하위 패키지 모두 컴포넌트 스캔의 대상이 된다.
+
+### Redis
+
+- @EnableRedisRepositories
+  - 레디스 레포지토리를 활성화하기 위한 어노테이션
+  - 옵션으로 스캔할 package를 지정하지 않으면 해당 클래스가 있는 패키지를 스캔한다.
