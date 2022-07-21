@@ -494,9 +494,21 @@
 
 #### 요청 매핑 헨들러 어뎁터 구조
 
--  HTTP 메시지 컨버터는 스프링 MVC 어디쯤에서 사용되는 것일까?
+
+- Spring MVC 구조
+
+![image](https://user-images.githubusercontent.com/77953474/180109624-38526b6c-8049-4649-a5e3-5ac4218eec3a.png)
+
+
+-  HTTP 메시지 컨버터는 위 스프링 MVC 구조에서 어디쯤에서 사용되는 것일까?
 	- 모든 비밀은 애노테이션 기반의 컨트롤러, 그러니까 @RequestMapping 을 처리하는 핸들러 어댑터인
 	```RequestMappingHandlerAdapter``` (요청 매핑 헨들러 어뎁터)에 있다.
+
+<br>
+
+##### RequestMappingHandlerAdapter 동작 방식
+![image](https://user-images.githubusercontent.com/77953474/180109710-0b048730-a8ed-4ae2-bf0a-c2b916a652af.png)
+
 
 <br>
 
@@ -542,6 +554,12 @@
 
 
 - HTTP 메시지 컨버터
+	##### HTTP 메시지 컨버터 위치
+	
+	![image](https://user-images.githubusercontent.com/77953474/180110426-3b030fd5-e58c-4639-81d8-369d9aab1bfc.png)
+
+
+
 	- HTTP 메시지 컨버터를 사용하는 @RequestBody 도 컨트롤러가 필요로 하는 파라미터의 값에 사용된다.
 	- @ResponseBody 의 경우도 컨트롤러의 반환 값을 이용한다.
 
