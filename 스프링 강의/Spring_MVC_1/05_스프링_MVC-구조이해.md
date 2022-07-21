@@ -27,16 +27,19 @@
 <br>	
 
 #### 동작순서
-	- 핸들러 조회 : 핸들러 매핑을 통해 요청 URL에 매핑된 핸들러(컨트롤러)를 조회
-	- 핸들러 어댑터 조회 : 핸들러를 실행할 수 있는 핸들러 어댑터를 조회
-	- 핸들러 어댑터 실행 : 핸들러 어댑터 실행
-	- 핸들러 실행 : 핸들러 어댑터가 실제 핸들러를 실행
-	- ModelAndVieww 반환 : 핸들러 어댑터는 핸들러가 변환하는 정보를 ModelAndView로 변환해서 반환한다.
-	- viewResolver 호출 : 뷰 리졸버를 찾고 실행
-		- JSP의 경우 ```InternalResourceViewResolver```가 자동 등록되고, 사용됨
-	- View 반환 : 뷰 리졸버는 뷰의 논리 이름을 물리 이름으로 바꾸고, 렌더링 역할을 담당하는 뷰 객체를 반환한다.
-		- JSP의 경우 ```InternalResourceView(JstlView)```를 반환하는데, 내부에 ```foward()```로직이 있다.
-	- 뷰 렌더링
+
+![image](https://user-images.githubusercontent.com/77953474/180109452-f8c6c145-f510-4ff6-a872-34c7b81c8663.png)
+
+- 핸들러 조회 : 핸들러 매핑을 통해 요청 URL에 매핑된 핸들러(컨트롤러)를 조회
+- 핸들러 어댑터 조회 : 핸들러를 실행할 수 있는 핸들러 어댑터를 조회
+- 핸들러 어댑터 실행 : 핸들러 어댑터 실행
+- 핸들러 실행 : 핸들러 어댑터가 실제 핸들러를 실행
+- ModelAndVieww 반환 : 핸들러 어댑터는 핸들러가 변환하는 정보를 ModelAndView로 변환해서 반환한다.
+- viewResolver 호출 : 뷰 리졸버를 찾고 실행
+	- JSP의 경우 ```InternalResourceViewResolver```가 자동 등록되고, 사용됨
+- View 반환 : 뷰 리졸버는 뷰의 논리 이름을 물리 이름으로 바꾸고, 렌더링 역할을 담당하는 뷰 객체를 반환한다.
+	- JSP의 경우 ```InternalResourceView(JstlView)```를 반환하는데, 내부에 ```foward()```로직이 있다.
+- 뷰 렌더링
 
 <br>
 
