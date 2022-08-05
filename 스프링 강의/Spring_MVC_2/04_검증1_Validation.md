@@ -297,3 +297,159 @@ th:field="*{price}"
 		- 타임리프 화면을 렌더링 할 때 ```th:errors``` 가 실행된다. 
 		- 만약 이때 오류가 있다면 생성된 오류 메시지 코드를 순서대로 돌아가면서 메시지를 찾는다. 
 		- 그리고 없으면 디폴트 메시지를 출력한다.
+
+
+<br>
+
+#### 오류 코드 관리 전략
+
+- 핵심은 구체적인 것에서 -> 덜 구체적인 것으로
+	- ```MessageCodesResolver``` 는 ```required.item.itemName``` 처럼 구체적인 것을 먼저 만들어주고,
+		```required``` 처럼 덜 구체적인 것을 가장 나중에 만든다.
+		- 메시지와 관련된 공통 전략을 편리하게 도입할 수 있다
+		
+	- 크게 중요하지 않은 메시지는 범용성 있는 ```requried``` 같은 메시지로 끝내고, 
+		정말 중요한 메시지는 꼭 필요할 때 구체적으로 적어서 사용하는 방식이 더 효과적
+		
+	- 예시) 크게 객체 오류와 필드 오류를 나누고 범용성에 따라 레벨을 나누어두자.
+		- ```itemName``` 의 경우 ```required``` 검증 오류 메시지가 발생하면 다음 코드 순서대로 메시지가 생성된다.
+			- 1. ```required.item.itemName```
+			- 2. ```required.itemName```
+			- 3. ```required.java.lang.String```
+			- 4. ```required```
+			
+		- 그리고 이렇게 생성된 메시지 코드를 기반으로 순서대로 ```MessageSource``` 에서 메시지를 찾는다
+		
+		- 구체적인 것에서 덜 구체적인 순서대로 찾는다. 
+			- 메시지에 1번이 없으면 2번을 찾고, 2번이 없으면 3번을 찾음
+			- 이렇게 되면 만약에 크게 중요하지 않은 오류 메시지는 기존에 정의된 것을 그냥 재활용 하면 된다.
+			
+<br>
+
+#### ValidationUtils
+
+- ValidationUtils 사용 전
+	```java
+	if (!StringUtils.hasText(item.getItemName())) {
+		bindingResult.rejectValue("itemName", "required", "기본: 상품 이름은 필수입니다.");
+	}
+	```
+	
+- ValidationUtils 사용 후
+	- 다음과 같이 한줄로 사용 가능하고 제공하는 기능은 ```Empty``` , 공백 같은 단순한 기능만 제공한다.
+		```java
+		ValidationUtils.rejectIfEmptyOrWhitespace(bindingResult, "itemName","required");
+		```
+
+<br>
+
+#### 정리
+
+- 1. ```rejectValue()``` 호출
+- 2. ```MessageCodesResolver``` 를 사용해서 검증 오류 코드로 메시지 코드들을 생성
+- 3. ```new FieldError()``` 를 생성하면서 메시지 코드들을 보관
+- 4. ```th:erros``` 에서 메시지 코드들로 메시지를 순서대로 메시지에서 찾고, 노출
+
+<br>
+
+#### 스프링이 직접 만든 오류 메시지 처리
+
+- 검증 오류 코드는 다음과 같이 2가지로 나눌 수 있다.
+	- 개발자가 직접 설정한 오류 코드 -> ```rejectValue()```를 직접 호출
+	- 스프링이 직접 검증 오류에 추가한 경우(주로 타입 정보가 맞지 않음)
+	
+- 스프링은 타입 오류가 발생하면 ```typeMismatch``` 라는 오류 코드를 사용한다. 
+	- 이 오류 코드가 ```MessageCodesResolver``` 를 통하면서 몇 가지 메시지 코드를 생성하는 것이다.
+
+- ```error.properties``` 에 해당 내용을 추가하면 타입 오류가 발생하였을 때, 원하는 메시지를 출력 가능하다.
+	```properties
+	typeMismatch.java.lang.Integer=숫자를 입력해주세요.
+	typeMismatch=타입 오류입니다.
+	```
+	
+<br>
+
+#### Validator 분리1
+
+- 복잡한 검증 로직을 별도로 분리하자.
+
+- 컨트롤러에서 검증 로직이 차지하는 부분은 매우 크다. 
+	- 이런 경우 별도의 클래스로 역할을 분리하는 것이 좋다. 
+	- 그리고 이렇게 분리한 검증 로직을 재사용 할 수도 있다.
+	
+- 스프링은 검증을 체계적으로 제공하기 위해 다음 인터페이스를 제공
+	```java
+	public interface Validator {
+		boolean supports(Class<?> clazz);
+		void validate(Object target, Errors errors);
+	}
+	```
+	
+	- ```supports() {}``` : 해당 검증기를 지원하는 여부 확인(뒤에서 설명)
+	- ```validate(Object target, Errors errors)``` : 검증 대상 객체와 ```BindingResult``` 를 파라미터로 받음
+
+<br>
+
+#### Validator 분리2
+
+- 스프링이 ```Validator``` 인터페이스를 별도로 제공하는 이유는 체계적으로 검증 기능을 도입하기 위해서다.
+	- 그런데 앞에서는 검증기를 직접 불러서 사용했고, 이렇게 사용해도 된다. 
+	- ```Validator``` 인터페이스를 사용해서 검증기를 만들면 스프링의 추가적인 도움을 받을 수 있다.
+	
+- ```WebDataBinder```를 통해서 사용하기
+	- ```WebDataBinder``` 는 스프링의 파라미터 바인딩의 역할을 해주고 검증 기능도 내부에 포함한다
+	
+- ```Controller``` 에 다음 코드 추가
+	```java
+	@InitBinder
+	public void init(WebDataBinder dataBinder) {
+		log.info("init binder {}", dataBinder);
+		dataBinder.addValidators(itemValidator);
+	}
+	```
+	
+	- 이렇게 ```WebDataBinder``` 에 검증기를 추가하면 해당 컨트롤러에서는 검증기를 자동으로 적용할 수 있다.
+		- ```@InitBinder``` : 해당 컨트롤러에만 영향을 준다. 글로벌 설정 같은 경우 별도로 해야한다. (뒤에 설명)
+
+- ```@Validated``` 적용
+	- validator를 직접 호출하는 부분을 제거하고, 대신에 검증 대상 앞에 ```@Validated``` 를 사용할 수 있다.
+		```java
+		public String addItemV6(@Validated @ModelAttribute Item item, BindingResult bindingResult, RedirectAttributes redirectAttributes) { ... }
+		```
+		
+	- 동작 방식
+		- ```@Validated``` 는 검증기를 실행하라는 애노테이션이다.
+		- 이 애노테이션이 붙으면 앞서 ```WebDataBinder``` 에 등록한 검증기를 찾아서 실행한다. 
+		- 그런데 여러 검증기를 등록한다면 그 중에 어떤 검증기가 실행되어야 할지 구분이 필요하다. 
+		- 이때 ```supports()``` 가 사용된다. - ```Validator``` 인터페이스를 상속받아 구현한 메서드
+		- 여기서는 ```supports(Item.class)``` 호출되고, 결과가 ```true``` 이므로 ```ItemValidator``` 의 ```validate()``` 가 호출된다.
+
+
+- 참고) 글로벌 설정 - 모든 컨트롤러에 다 적용 됨
+	```java
+	@SpringBootApplication
+	public class ItemServiceApplication implements WebMvcConfigurer {
+		public static void main(String[] args) {
+			SpringApplication.run(ItemServiceApplication.class, args);
+		}
+		
+		@Override
+		public Validator getValidator() {
+			return new ItemValidator();
+		}
+	}
+	```
+	
+	- 이렇게 글로벌 설정을 추가할 수 있다. 기존 컨트롤러의 ```@InitBinder``` 를 제거해도 글로벌 설정으로 정상 동작하는 것을 확인 가능
+	- 글로벌 설정을 하면 다음에 설명할 ```BeanValidator```가 자동 등록되지 않는다.
+
+- 참고) ```@Validated / @Valid```
+	- 검증시 ```@Validated``` / ```@Valid``` 둘다 사용가능하다.
+	
+	- ```javax.validation.@Valid``` 를 사용하려면 ```build.gradle``` 의존관계 추가가 필요하다.
+		- ```implementation 'org.springframework.boot:spring-boot-starter-validation'```
+	
+	- ```@Validated``` 는 스프링 전용 검증 애노테이션이고, ```@Valid``` 는 자바 표준 검증 애노테이션이다.
+	
+	- 자세한 내용은 다음 ```Bean Validation```에서 설명
+	
