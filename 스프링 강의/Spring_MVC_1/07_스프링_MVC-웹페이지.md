@@ -151,21 +151,21 @@
 
 #### @ModelAttribute
 
-	##### @ModelAttribute - 요청 파라미터 처리
-	
-	- ```@ModelAttribute``` 는 ```Item``` 객체를 생성하고, 요청 파라미터의 값을 프로퍼티 접근법(setXxx)으로 입력해준다.
-	
-	##### @ModelAttribute - Model 추가
-	
-	- @ModelAttribute 는 중요한 한가지 기능이 더 있는데, 바로 모델(Model)에 @ModelAttribute 로 지정한 객체를 자동으로 넣어준다. 
-	
-	- 코드에서, ```model.addAttribute("item", item)``` 부분이 주석처리 되어 있어도 잘 동작하는 것을 확인할 수 있다.
-	
-	- 모델에 데이터를 담을 때는 이름이 필요하다. 이름은 ```@ModelAttribute``` 에 지정한 ```name(value)``` 속성을 사용한다. 
-	
-	- 만약 다음과 같이 @ModelAttribute 의 이름을 다르게 지정하면 다른 이름으로 모델에	포함된다.
-		- ```@ModelAttribute("hello") Item item``` -> 이름을 ```hello``` 로 지정
-		- ```model.addAttribute("hello", item);``` -> 모델에 ```hello``` 이름으로 저장
+##### @ModelAttribute - 요청 파라미터 처리
+
+- ```@ModelAttribute``` 는 ```Item``` 객체를 생성하고, 요청 파라미터의 값을 프로퍼티 접근법(setXxx)으로 입력해준다.
+
+##### @ModelAttribute - Model 추가
+
+- @ModelAttribute 는 중요한 한가지 기능이 더 있는데, 바로 모델(Model)에 @ModelAttribute 로 지정한 객체를 자동으로 넣어준다. 
+
+- 코드에서, ```model.addAttribute("item", item)``` 부분이 주석처리 되어 있어도 잘 동작하는 것을 확인할 수 있다.
+
+- 모델에 데이터를 담을 때는 이름이 필요하다. 이름은 ```@ModelAttribute``` 에 지정한 ```name(value)``` 속성을 사용한다. 
+
+- 만약 다음과 같이 @ModelAttribute 의 이름을 다르게 지정하면 다른 이름으로 모델에	포함된다.
+	- ```@ModelAttribute("hello") Item item``` -> 이름을 ```hello``` 로 지정
+	- ```model.addAttribute("hello", item);``` -> 모델에 ```hello``` 이름으로 저장
 		
 <br>
 
